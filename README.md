@@ -59,8 +59,22 @@ so the character list reads "Narrator 5 (Theo)".
 You can re-import an edited script later — progress is matched per line, so most
 of it survives.
 
-Your own copy of the script lives in `scripts/`, which is git-ignored: it never
-leaves this machine and is never part of the published repo.
+## The bundled script
+
+`default-script.json` points at a script that loads automatically the first time
+the app is opened on a device, so the URL opens straight into your part:
+
+```json
+{ "title": "A Christmas Carol", "path": "scripts/a-christmas-carol.txt", "character": "Narrator 5" }
+```
+
+Point `path` at another file, or delete the JSON, to start with an empty screen.
+Actor names are left out of the published copy on purpose — the role is all the
+app needs.
+
+Each browser keeps its own copy of whatever it loaded, plus its own progress. To
+pick up an edited `.txt` on a device that already has the old one, hit
+**Start over** and reload the page.
 
 ## Practising
 

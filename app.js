@@ -1371,13 +1371,66 @@
     if (had && S.lines.length && S.character) {
       show('practice');
       autoSpeakCue();
-    } else if (had && S.lines.length) {
-      show('cast');
-    } else {
-      prefillImport();
-      show('import');
+      return;
     }
-    document.title = S.title ? S.title + ' — Lines' : 'Lines — learn your part';
+    if (had && S.lines.length) {
+      show('cast');
+      return;
+    }
+
+    prefillImport();
+    show('import');
+    loadDefaultScript();
+  }
+
+  /**
+   * First visit on a device: pull the script configured in default-script.json
+   * so the URL opens straight into the part. Silently does nothing when the
+   * file is missing (e.g. opened straight from disk with file://).
+   */
+  async function loadDefaultScript() {
+    if (typeof fetch !== 'function') return false;
+    try {
+      const res = await fetch('default-script.json', { cache: 'no-cache' });
+      if (!res.ok) return false;
+      const cfg = await res.json();
+      if (!cfg || !cfg.path) return false;
+
+      const file = await fetch(cfg.path, { cache: 'no-cache' });
+      if (!file.ok) return false;
+      const raw = await file.text();
+
+      if (S.lines.length || ($('#scriptInput') && $('#scriptInput').value.trim())) return false;
+
+      const parsed = parseScript(raw);
+      if (!parsed.lines.length) return false;
+
+      S.raw = raw;
+      S.title = cfg.title || '';
+      S.lines = parsed.lines;
+      S.scenes = parsed.scenes;
+      S.actors = parsed.actors;
+
+      const chars = charactersOf(parsed.lines);
+      S.character = chars.some((c) => c.name === cfg.character)
+        ? cfg.character
+        : chars.length
+        ? chars[0].name
+        : '';
+
+      ensureVoices();
+      save();
+
+      if (S.character) {
+        show('practice');
+        autoSpeakCue();
+      } else {
+        show('cast');
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   init();
