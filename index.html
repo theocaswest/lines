@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#100e0c">
+<title>Lines — learn your part</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='25' x='4' font-size='24'%3E%F0%9F%8E%AD%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <button class="brand" id="brandBtn" title="Home">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span>Lines</span>
+  </button>
+  <div class="topbar-mid" id="topbarMid"></div>
+  <nav class="topbar-nav" id="topbarNav"></nav>
+</header>
+
+<main>
+
+  <!-- ───────────────────────── import ───────────────────────── -->
+  <section class="view" id="view-import">
+    <div class="hero">
+      <h1>Learn your lines.</h1>
+      <p class="lede">Paste your script, pick your character, and rehearse with spoken cues, first-letter hints and typing drills. Everything stays in this browser — no account, no upload.</p>
+    </div>
+
+    <div class="card">
+      <label class="field">
+        <span>Play or scene title</span>
+        <input id="titleInput" placeholder="e.g. A Midsummer Night's Dream — Act 2" autocomplete="off">
+      </label>
+
+      <label class="field">
+        <span>Script</span>
+        <textarea id="scriptInput" spellcheck="false" placeholder="HAMLET: To be, or not to be, that is the question…&#10;&#10;HORATIO: My lord…"></textarea>
+      </label>
+
+      <div class="row">
+        <button class="btn primary" id="btnParse">Read script</button>
+        <button class="btn ghost" id="btnSample">Try a sample</button>
+        <button class="btn ghost" id="btnClear" hidden>Start over</button>
+      </div>
+
+      <p class="hint">
+        Both <code>NAME: line</code> and a character name on its own line work.
+        Stage directions in <code>(parentheses)</code> are kept for context but never tested.
+      </p>
+      <p class="err" id="importErr" role="alert"></p>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── cast ───────────────────────── -->
+  <section class="view" id="view-cast">
+    <div class="head-block">
+      <h2>Who are you playing?</h2>
+      <p class="muted" id="castSummary"></p>
+    </div>
+
+    <div class="chips" id="charChips"></div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Voices</h3>
+        <p class="muted sm">Each character gets a different voice when cues are read aloud.</p>
+      </div>
+      <div class="voice-list" id="castVoices"></div>
+    </div>
+
+    <div class="row">
+      <button class="btn primary" id="btnStart">Start rehearsing</button>
+      <button class="btn ghost" id="btnBack">Edit script</button>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── practice ───────────────────────── -->
+  <section class="view" id="view-practice">
+    <div class="practice-head">
+      <div class="seg" id="modeSeg" role="tablist" aria-label="Practice mode">
+        <button data-mode="rehearse" role="tab">Rehearse</button>
+        <button data-mode="type" role="tab">Type</button>
+      </div>
+      <div class="practice-progress">
+        <span class="count" id="pgCount">0 / 0</span>
+        <div class="bar"><i id="pgBar"></i></div>
+      </div>
+    </div>
+
+    <div class="practice-tools">
+      <label class="select">
+        <span>Scene</span>
+        <select id="sceneSel"></select>
+      </label>
+      <label class="check"><input type="checkbox" id="troubleOnly"> Trouble lines</label>
+      <label class="check"><input type="checkbox" id="fullScene"> Whole scene</label>
+      <button class="btn ghost sm" id="btnVoices" type="button">Voices</button>
+    </div>
+
+    <div class="stage" id="stage"></div>
+    <div class="controls" id="controls"></div>
+    <p class="keys" id="keys"></p>
+    <p id="live" class="sr-only" aria-live="polite"></p>
+  </section>
+
+  <!-- ───────────────────────── stats ───────────────────────── -->
+  <section class="view" id="view-stats">
+    <div class="head-block">
+      <h2>Progress</h2>
+      <p class="muted" id="statsSub"></p>
+    </div>
+    <div class="stat-grid" id="statGrid"></div>
+    <div class="card">
+      <div class="card-head"><h3>By scene</h3></div>
+      <div class="scene-bars" id="sceneBars"></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h3>Trouble lines</h3>
+        <p class="muted sm">Lines you've missed. Drill these first.</p>
+      </div>
+      <div id="troubleList"></div>
+    </div>
+    <p><button class="btn ghost sm" id="btnResetProgress" type="button">Reset all progress</button></p>
+  </section>
+
+</main>
+
+<dialog id="voiceDlg" class="dlg">
+  <form method="dialog" class="dlg-body">
+    <div class="dlg-head">
+      <h3>Voices &amp; pacing</h3>
+      <button class="icon-btn" value="close" aria-label="Close">✕</button>
+    </div>
+
+    <label class="field">
+      <span>Speed <output id="rateOut">1.0×</output></span>
+      <input type="range" id="rateInput" min="0.6" max="1.4" step="0.05" value="1">
+    </label>
+
+    <label class="check"><input type="checkbox" id="autoSpeak"> Read my cue lines automatically</label>
+    <label class="check"><input type="checkbox" id="speakDirs"> Read stage directions aloud</label>
+
+    <div class="voice-list" id="dlgVoices"></div>
+  </form>
+</dialog>
+
+<script src="app.js" defer></script>
+</body>
+</html>
