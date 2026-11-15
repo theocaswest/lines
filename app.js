@@ -110,7 +110,7 @@
   }
 
   /**
-   * Reads a name-column cell such as "SCROOGE Henry P" or "NARRATOR 5 Theo".
+   * Reads a name-column cell such as "SCROOGE Jane Doe" or "NARRATOR 5 John Roe".
    * Leading ALL-CAPS words are the role; the title-case tail is the actor
    * playing it, which is handy in school scripts.
    */
@@ -145,7 +145,7 @@
    *    HAMLET: To be or not to be          (inline)
    *    HAMLET                              (name on its own line)
    *    To be or not to be
-   *    SCROOGE Henry P    Home at last.    (name column + actor, as in school scripts)
+   *    SCROOGE Jane Doe    Home at last.    (name column + actor, as in school scripts)
    * plus ACT / SCENE headings and (stage directions).
    */
   function parseScript(rawText) {
@@ -186,7 +186,7 @@
         continue;
       }
 
-      // name column: "SCROOGE Henry P      (Reaching the door) Home at last."
+      // name column: "SCROOGE Jane Doe      (Reaching the door) Home at last."
       const gap = indented ? null : rawLine.match(/^(\S.*?)(?:\t|\s{2,})(\S.*)$/);
       if (gap) {
         const cell = speakerCell(gap[1]);

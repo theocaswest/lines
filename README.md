@@ -40,13 +40,13 @@ To be, or not to be, that is the question.
 or a name column, which is how most printed school scripts are set:
 
 ```
-SCROOGE Henry P      (Reaching the door) Home at last.
-NARRATOR 5 Theo      As he sat in the chilly gloom, an eerie jangling sound...
+SCROOGE Jane Doe     (Reaching the door) Home at last.
+NARRATOR 5 John Roe   As he sat in the chilly gloom, an eerie jangling sound...
   In any ordinary man, considering the icy temperature in the room...
 ```
 
 In that last one the capitals are the role and the name after them is the actor,
-so the character list reads "Narrator 5 (Theo)".
+so the character list reads "Narrator 5 (John Roe)".
 
 - `ACT 1`, `SCENE 2` headings become scenes you can practise separately.
 - Stage directions in `(parentheses)` or `[brackets]` are shown for context but
