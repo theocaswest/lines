@@ -3,6 +3,9 @@
 A small app for learning your part in a school play. Paste the script, pick your
 character, then rehearse with spoken cues, first-letter hints and typing drills.
 
+**Live version: <https://theocaswest.github.io/lines/>** — open it on your phone,
+nothing to install.
+
 Nothing is uploaded and there's no build step — your script and progress live in
 the browser's local storage.
 
