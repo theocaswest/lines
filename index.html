@@ -40,6 +40,11 @@
         <textarea id="scriptInput" spellcheck="false" placeholder="HAMLET: To be, or not to be, that is the question…&#10;&#10;HORATIO: My lord…"></textarea>
       </label>
 
+      <div class="drop" id="dropZone" role="button" tabindex="0" aria-label="Load a script text file">
+        <input type="file" id="fileInput" accept=".txt,.text,.fountain,.md,text/plain" hidden>
+        <span>Drag a <b>.txt</b> script here, or <span class="link">choose a file</span></span>
+      </div>
+
       <div class="row">
         <button class="btn primary" id="btnParse">Read script</button>
         <button class="btn ghost" id="btnSample">Try a sample</button>
@@ -47,7 +52,7 @@
       </div>
 
       <p class="hint">
-        Both <code>NAME: line</code> and a character name on its own line work.
+        Both <code>NAME: line</code> and a name column (<code>SCROOGE&nbsp;&nbsp;&nbsp;Home at last.</code>) work.
         Stage directions in <code>(parentheses)</code> are kept for context but never tested.
       </p>
       <p class="err" id="importErr" role="alert"></p>

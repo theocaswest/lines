@@ -43,6 +43,7 @@
       character: '',
       lines: [],
       scenes: [{ label: 'Open' }],
+      actors: {},
       progress: {},
       settings: defaultSettings()
     };
@@ -79,6 +80,7 @@
   const DIRECTION_RE = /^(?:\(.*\)|\[.*\])$/;
   const SCENE_RE = /^(?:ACT|SCENE|PART)\s+(?:[IVXLCDM]+|\d+|ONE|TWO|THREE|FOUR|FIVE)\b[.:\u2014-]?\s*(.*)$/i;
   const SKIP_NAMES = /^(ACT|SCENE|THE END|END|CURTAIN|BLACKOUT|PROLOGUE|EPILOGUE|INTERMISSION|TITLE|FINIS)$/i;
+  const ROLE_STOP = /^(SONG|SCENE|ACT|PART|CD|TRACK|SFX|THE|END|CURTAIN|BLACKOUT|MUSIC|LIGHTS|PROLOGUE|EPILOGUE|INTERMISSION|TITLE|FINIS|NOTE)$/i;
 
   function tidyName(name) {
     let n = name.replace(/\s+/g, ' ').trim();
@@ -108,19 +110,53 @@
   }
 
   /**
-   * Understands the two shapes stage scripts usually arrive in:
-   *    HAMLET: To be or not to be        (inline)
-   *    HAMLET                            (name on its own line)
+   * Reads a name-column cell such as "SCROOGE Henry P" or "NARRATOR 5 Theo".
+   * Leading ALL-CAPS words are the role; the title-case tail is the actor
+   * playing it, which is handy in school scripts.
+   */
+  function speakerCell(cell) {
+    const s = String(cell).trim().replace(/\s+/g, ' ');
+    if (!s || s.length > 44) return null;
+    if (!/^[A-Z0-9]/.test(s)) return null;
+    const words = s.split(' ');
+    if (words.length > 5) return null;
+
+    let i = 0;
+    while (i < words.length) {
+      const w = words[i];
+      if (!/^[A-Z0-9][A-Z0-9'’.\-&]*$/.test(w)) break;
+      if (w.length === 1 && !/\d/.test(w)) break;   // a lone initial belongs to the actor
+      i++;
+    }
+    if (!i) return null;
+
+    const role = words.slice(0, i).join(' ');
+    if (ROLE_STOP.test(role.split(' ')[0])) return null;
+
+    const actor = words.slice(i).join(' ');
+    if (!actor) return { role: tidyName(role), actor: '' };
+    if (!/^[A-Z]/.test(actor) || actor.split(' ').length > 3) return null;
+
+    return { role: tidyName(role), actor: tidyName(actor) };
+  }
+
+  /**
+   * Understands the shapes stage scripts usually arrive in:
+   *    HAMLET: To be or not to be          (inline)
+   *    HAMLET                              (name on its own line)
    *    To be or not to be
+   *    SCROOGE Henry P    Home at last.    (name column + actor, as in school scripts)
    * plus ACT / SCENE headings and (stage directions).
    */
   function parseScript(rawText) {
     const src = String(rawText || '').replace(/\r\n?/g, '\n').split('\n');
     const scenes = [{ label: 'Opening' }];
     const canon = new Map();
+    const actors = {};
     const out = [];
     let sceneIdx = 0;
     let speaker = null;
+    let gutter = false; // document uses a name column
 
     const canonName = (name) => {
       const key = name.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -131,7 +167,9 @@
     };
 
     for (let i = 0; i < src.length; i++) {
-      const t = src[i].replace(/\s+/g, ' ').trim();
+      const rawLine = src[i];
+      const t = rawLine.replace(/\s+/g, ' ').trim();
+      const indented = /^[ \t]/.test(rawLine);
       if (!t) { speaker = null; continue; }
 
       const sceneMatch = t.match(SCENE_RE);
@@ -148,6 +186,20 @@
         continue;
       }
 
+      // name column: "SCROOGE Henry P      (Reaching the door) Home at last."
+      const gap = indented ? null : rawLine.match(/^(\S.*?)(?:\t|\s{2,})(\S.*)$/);
+      if (gap) {
+        const cell = speakerCell(gap[1]);
+        if (cell) {
+          const name = canonName(cell.role);
+          if (cell.actor) actors[name] = cell.actor;
+          out.push({ type: 'dialogue', speaker: name, text: gap[2].trim(), scene: sceneIdx });
+          speaker = name;
+          gutter = true;
+          continue;
+        }
+      }
+
       const inline = t.match(/^([A-Z][A-Za-z0-9 .,'\u2019-]{0,29}?)\s*:\s*(.+)$/);
       if (inline && inline[1].trim().split(/\s+/).length <= 4) {
         const name = canonName(inline[1]);
@@ -156,7 +208,7 @@
         continue;
       }
 
-      if (isCapsName(t)) {
+      if (!indented && !gutter && isCapsName(t)) {
         const after = nextNonEmpty(src, i);
         if (after && !DIRECTION_RE.test(after)) {
           speaker = canonName(t);
@@ -164,16 +216,18 @@
         }
       }
 
-      if (speaker) {
+      if (speaker && (indented || !gutter)) {
         const last = out[out.length - 1];
         if (last && last.type === 'dialogue' && last.speaker === speaker && last.scene === sceneIdx) {
           last.text += ' ' + t;          // wrapped line inside one speech
         } else {
           out.push({ type: 'dialogue', speaker, text: t, scene: sceneIdx });
         }
-      } else {
-        out.push({ type: 'direction', speaker: null, text: t, scene: sceneIdx });
+        continue;
       }
+
+      out.push({ type: 'direction', speaker: null, text: t, scene: sceneIdx });
+      if (gutter) speaker = null;
     }
 
     // stable-ish ids so re-importing an edited script keeps progress
@@ -198,7 +252,7 @@
       scenes.push(...kept);
     }
 
-    return { lines: out, scenes };
+    return { lines: out, scenes, actors };
   }
 
   function charactersOf(lines) {
@@ -207,7 +261,7 @@
       if (l.type === 'dialogue' && l.speaker) counts.set(l.speaker, (counts.get(l.speaker) || 0) + 1);
     });
     return Array.from(counts.entries())
-      .map(([name, n]) => ({ name, n }))
+      .map(([name, n]) => ({ name, n, actor: (S.actors && S.actors[name]) || '' }))
       .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
   }
 
@@ -289,6 +343,7 @@
   function show(name) {
     const prev = currentView;
     currentView = name;
+    window.scrollTo({ top: 0, behavior: 'auto' });
     views.forEach((v) => {
       const el = $('#view-' + v);
       if (el) el.classList.toggle('on', v === name);
@@ -298,7 +353,6 @@
     if (name === 'cast') renderCast();
     if (name === 'practice') { rebuild(); }
     if (name === 'stats') renderStats();
-    window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
   function renderTopbar() {
@@ -368,7 +422,7 @@
       return;
     }
 
-    const { lines, scenes } = parseScript(raw);
+    const { lines, scenes, actors } = parseScript(raw);
     const chars = charactersOf(lines);
 
     if (!lines.length) {
@@ -385,6 +439,7 @@
     S.title = title;
     S.lines = lines;
     S.scenes = scenes;
+    S.actors = actors;
     S.character = chars.some((c) => c.name === previousCharacter) ? previousCharacter : '';
     S.settings.scene = 'all';
     ensureVoices();
@@ -408,7 +463,8 @@
     $('#charChips').innerHTML = chars
       .map((c) =>
         '<button class="chipbtn' + (c.name === S.character ? ' on' : '') + '" data-char="' + esc(c.name) + '">' +
-        esc(c.name) + '<span class="n">' + c.n + '</span></button>'
+        esc(c.name) +
+        '<span class="n">' + (c.actor ? esc(c.actor) + ' · ' : '') + c.n + '</span></button>'
       )
       .join('');
 
@@ -623,7 +679,7 @@
       for (let i = li + 1; i <= end; i++) after.push(lineHTML(S.lines[i], { dim: true }));
       html = before.join('') + mineHTML + after.join('');
     } else {
-      const from = Math.max(start, li - 8);
+      const from = Math.max(start, li - 5);
       const ctx = [];
       for (let i = from; i < li; i++) ctx.push(lineHTML(S.lines[i], { dim: true }));
       html = ctx.join('') + (S.settings.mode === 'type' ? '' : myPartHTML(line));
@@ -638,6 +694,9 @@
     if (S.settings.fullScene) {
       const cur = $('.mypart.script-mode');
       if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+    } else {
+      const card = $('.mypart');
+      if (card && card.scrollIntoView) card.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
     }
 
     if (S.settings.mode === 'type') {
@@ -1065,6 +1124,40 @@
       prefillImport();
       show('import');
     });
+
+    /* script file loading */
+    const fileInput = $('#fileInput');
+    const dropZone = $('#dropZone');
+    const loadFile = (file) => {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        $('#scriptInput').value = String(reader.result || '');
+        const title = $('#titleInput');
+        if (!title.value.trim()) {
+          title.value = file.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim();
+        }
+        $('#importErr').textContent = '';
+      };
+      reader.readAsText(file);
+    };
+    if (dropZone && fileInput) {
+      dropZone.addEventListener('click', () => fileInput.click());
+      dropZone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+      });
+      fileInput.addEventListener('change', () => { loadFile(fileInput.files[0]); fileInput.value = ''; });
+      ['dragenter', 'dragover'].forEach((ev) =>
+        dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add('over'); })
+      );
+      ['dragleave', 'dragend', 'drop'].forEach((ev) =>
+        dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.remove('over'); })
+      );
+      dropZone.addEventListener('drop', (e) => {
+        const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f) loadFile(f);
+      });
+    }
 
     /* practice toolbar */
     $('#modeSeg').addEventListener('click', (e) => {

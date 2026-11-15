@@ -23,28 +23,44 @@ Then open the URL it prints on your phone.
 
 ## Put your script in
 
-Copy the script out of Google Docs / Word / PDF and paste it. Two formats work:
+Copy the script out of Google Docs / Word / PDF and paste it — or drop a `.txt`
+file on the import screen. Three layouts work:
 
 ```
 HAMLET: To be, or not to be, that is the question.
 ```
 
-or a name on its own line:
+a name on its own line:
 
 ```
 HAMLET
 To be, or not to be, that is the question.
 ```
 
+or a name column, which is how most printed school scripts are set:
+
+```
+SCROOGE Henry P      (Reaching the door) Home at last.
+NARRATOR 5 Theo      As he sat in the chilly gloom, an eerie jangling sound...
+  In any ordinary man, considering the icy temperature in the room...
+```
+
+In that last one the capitals are the role and the name after them is the actor,
+so the character list reads "Narrator 5 (Theo)".
+
 - `ACT 1`, `SCENE 2` headings become scenes you can practise separately.
 - Stage directions in `(parentheses)` or `[brackets]` are shown for context but
   never tested or spoken.
-- Wrapped lines (one speech across several lines) are joined automatically.
+- Wrapped lines (one speech across several lines) are joined automatically;
+  indented lines continue the speech above them.
 - Lines that are neither dialogue nor a direction land as stage directions, so
   nothing important disappears.
 
 You can re-import an edited script later — progress is matched per line, so most
 of it survives.
+
+Your own copy of the script lives in `scripts/`, which is git-ignored: it never
+leaves this machine and is never part of the published repo.
 
 ## Practising
 
